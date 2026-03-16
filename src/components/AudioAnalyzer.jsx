@@ -1,29 +1,31 @@
 import { useRef, useEffect, useCallback } from "react";
 
 /**
- * Audio spectrum analyzer — canvas-based frequency bars.
+ * Flowing waveform visualizer — smooth, aqueous curves
+ * instead of chunky frequency bars. Mirrored top/bottom
+ * with bezier interpolation for organic movement.
  *
- * Uses Web Audio API to capture microphone input (picks up music
- * playing through speakers). Falls back to procedural animation
- * when mic access is denied or unavailable.
+ * Tries mic capture for real audio; falls back to procedural.
  */
 
-const BAR_COUNT = 64;
-const COLORS = {
-  cyan: [0, 212, 255],
-  magenta: [255, 0, 110],
-  purple: [139, 92, 246],
-};
+const POINTS = 128;
+
+// Neon palette for gradient
+const GRADIENT_STOPS = [
+  { pos: 0, color: "rgba(0, 212, 255, 0.6)" },     // cyan
+  { pos: 0.3, color: "rgba(139, 92, 246, 0.5)" },   // purple
+  { pos: 0.6, color: "rgba(255, 0, 110, 0.4)" },    // magenta
+  { pos: 1, color: "rgba(255, 210, 50, 0.3)" },      // gold
+];
 
 export default function AudioAnalyzer({ isPlaying }) {
   const canvasRef = useRef(null);
   const analyserRef = useRef(null);
-  const dataRef = useRef(new Uint8Array(BAR_COUNT));
   const animRef = useRef(null);
-  const proceduralRef = useRef(new Float32Array(BAR_COUNT).fill(0));
   const hasAudioRef = useRef(false);
+  const smoothedRef = useRef(new Float32Array(POINTS).fill(0));
 
-  // Try to capture mic audio
+  // Try mic capture
   useEffect(() => {
     let stream = null;
     let ctx = null;
@@ -34,19 +36,17 @@ export default function AudioAnalyzer({ isPlaying }) {
         ctx = new AudioContext();
         const source = ctx.createMediaStreamSource(stream);
         const analyser = ctx.createAnalyser();
-        analyser.fftSize = BAR_COUNT * 2;
-        analyser.smoothingTimeConstant = 0.8;
+        analyser.fftSize = POINTS * 2;
+        analyser.smoothingTimeConstant = 0.85;
         source.connect(analyser);
         analyserRef.current = analyser;
         hasAudioRef.current = true;
       } catch {
-        // Mic not available — procedural fallback
         hasAudioRef.current = false;
       }
     }
 
     initAudio();
-
     return () => {
       if (stream) stream.getTracks().forEach((t) => t.stop());
       if (ctx) ctx.close();
@@ -57,77 +57,137 @@ export default function AudioAnalyzer({ isPlaying }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const { width, height } = canvas;
+    const dpr = window.devicePixelRatio || 1;
+    const w = canvas.offsetWidth;
+    const h = canvas.offsetHeight;
 
-    ctx.clearRect(0, 0, width, height);
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    ctx.scale(dpr, dpr);
 
-    let data;
+    const mid = h / 2;
+    ctx.clearRect(0, 0, w, h);
+
+    const smoothed = smoothedRef.current;
+    const time = performance.now() * 0.001;
 
     if (hasAudioRef.current && analyserRef.current) {
-      // Real audio data
       const raw = new Uint8Array(analyserRef.current.frequencyBinCount);
       analyserRef.current.getByteFrequencyData(raw);
-      data = raw;
+      for (let i = 0; i < POINTS; i++) {
+        const target = raw[i] / 255;
+        smoothed[i] += (target - smoothed[i]) * 0.12;
+      }
     } else {
-      // Procedural — simulate audio-reactive bars
-      const proc = proceduralRef.current;
-      const time = performance.now() * 0.001;
-      for (let i = 0; i < BAR_COUNT; i++) {
-        const freq = i / BAR_COUNT;
+      // Procedural — organic flowing waves
+      for (let i = 0; i < POINTS; i++) {
+        const x = i / POINTS;
         const base = isPlaying
-          ? Math.sin(time * (2 + freq * 3) + i * 0.4) * 0.3 +
-            Math.sin(time * (1.2 + freq * 5) + i * 0.7) * 0.2 +
-            Math.sin(time * 0.5 + i * 0.2) * 0.15 +
-            0.15
-          : 0.02 + Math.sin(time * 0.3 + i * 0.1) * 0.02;
+          ? Math.sin(time * 1.5 + x * 8) * 0.2 +
+            Math.sin(time * 2.3 + x * 12 + 1.5) * 0.15 +
+            Math.sin(time * 0.8 + x * 4 + 3.0) * 0.1 +
+            Math.sin(time * 3.1 + x * 20) * 0.05 +
+            0.12
+          : Math.sin(time * 0.4 + x * 3) * 0.02 + 0.02;
 
-        // Smoothing
-        proc[i] += (base - proc[i]) * 0.15;
-      }
-      // Convert to 0-255 range
-      data = new Uint8Array(BAR_COUNT);
-      for (let i = 0; i < BAR_COUNT; i++) {
-        data[i] = Math.max(0, Math.min(255, proc[i] * 255));
+        smoothed[i] += (Math.max(0, base) - smoothed[i]) * 0.08;
       }
     }
 
-    const barWidth = width / BAR_COUNT;
-    const gap = 1;
+    // Create gradient
+    const gradient = ctx.createLinearGradient(0, 0, w, 0);
+    GRADIENT_STOPS.forEach((s) => gradient.addColorStop(s.pos, s.color));
 
-    for (let i = 0; i < BAR_COUNT; i++) {
-      const value = data[i] / 255;
-      const barHeight = value * height * 0.9;
+    // Draw flowing curves — top half
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
 
-      // Color gradient: cyan → purple → magenta based on frequency
-      const t = i / BAR_COUNT;
-      let r, g, b;
-      if (t < 0.5) {
-        const s = t * 2;
-        r = COLORS.cyan[0] + (COLORS.purple[0] - COLORS.cyan[0]) * s;
-        g = COLORS.cyan[1] + (COLORS.purple[1] - COLORS.cyan[1]) * s;
-        b = COLORS.cyan[2] + (COLORS.purple[2] - COLORS.cyan[2]) * s;
+    for (let i = 0; i < POINTS; i++) {
+      const x = (i / (POINTS - 1)) * w;
+      const amplitude = smoothed[i] * mid * 0.85;
+      const y = mid - amplitude;
+
+      if (i === 0) {
+        ctx.lineTo(x, y);
       } else {
-        const s = (t - 0.5) * 2;
-        r = COLORS.purple[0] + (COLORS.magenta[0] - COLORS.purple[0]) * s;
-        g = COLORS.purple[1] + (COLORS.magenta[1] - COLORS.purple[1]) * s;
-        b = COLORS.purple[2] + (COLORS.magenta[2] - COLORS.purple[2]) * s;
-      }
-
-      const alpha = 0.4 + value * 0.6;
-      ctx.fillStyle = `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${alpha})`;
-
-      const x = i * barWidth + gap;
-      const w = barWidth - gap * 2;
-      ctx.fillRect(x, height - barHeight, w, barHeight);
-
-      // Glow on peaks
-      if (value > 0.6) {
-        ctx.shadowColor = `rgba(${r | 0}, ${g | 0}, ${b | 0}, 0.5)`;
-        ctx.shadowBlur = 6;
-        ctx.fillRect(x, height - barHeight, w, 2);
-        ctx.shadowBlur = 0;
+        const prevX = ((i - 1) / (POINTS - 1)) * w;
+        const cpx = (prevX + x) / 2;
+        const prevAmp = smoothed[i - 1] * mid * 0.85;
+        const prevY = mid - prevAmp;
+        ctx.quadraticCurveTo(prevX + (x - prevX) * 0.5, prevY, cpx + (x - cpx) * 0.5, (prevY + y) / 2);
+        ctx.lineTo(x, y);
       }
     }
+
+    ctx.lineTo(w, mid);
+    ctx.closePath();
+
+    ctx.fillStyle = gradient;
+    ctx.globalAlpha = 0.4;
+    ctx.fill();
+
+    // Stroke the top edge
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    for (let i = 0; i < POINTS; i++) {
+      const x = (i / (POINTS - 1)) * w;
+      const amplitude = smoothed[i] * mid * 0.85;
+      const y = mid - amplitude;
+      if (i === 0) {
+        ctx.lineTo(x, y);
+      } else {
+        const prevX = ((i - 1) / (POINTS - 1)) * w;
+        const prevAmp = smoothed[i - 1] * mid * 0.85;
+        const prevY = mid - prevAmp;
+        const cpx = (prevX + x) / 2;
+        ctx.quadraticCurveTo(cpx, prevY, x, y);
+      }
+    }
+    ctx.strokeStyle = "rgba(0, 212, 255, 0.6)";
+    ctx.lineWidth = 1.5;
+    ctx.globalAlpha = 0.8;
+    ctx.stroke();
+
+    // Mirror — bottom half (reflected, dimmer)
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+
+    for (let i = 0; i < POINTS; i++) {
+      const x = (i / (POINTS - 1)) * w;
+      const amplitude = smoothed[i] * mid * 0.5; // shorter mirror
+      const y = mid + amplitude;
+
+      if (i === 0) {
+        ctx.lineTo(x, y);
+      } else {
+        const prevX = ((i - 1) / (POINTS - 1)) * w;
+        const prevAmp = smoothed[i - 1] * mid * 0.5;
+        const prevY = mid + prevAmp;
+        const cpx = (prevX + x) / 2;
+        ctx.quadraticCurveTo(cpx, prevY, x, y);
+      }
+    }
+
+    ctx.lineTo(w, mid);
+    ctx.closePath();
+
+    const mirrorGradient = ctx.createLinearGradient(0, 0, w, 0);
+    mirrorGradient.addColorStop(0, "rgba(139, 92, 246, 0.3)");
+    mirrorGradient.addColorStop(0.5, "rgba(255, 0, 110, 0.2)");
+    mirrorGradient.addColorStop(1, "rgba(255, 210, 50, 0.15)");
+
+    ctx.fillStyle = mirrorGradient;
+    ctx.globalAlpha = 0.25;
+    ctx.fill();
+
+    // Thin center line
+    ctx.beginPath();
+    ctx.moveTo(0, mid);
+    ctx.lineTo(w, mid);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.04)";
+    ctx.lineWidth = 0.5;
+    ctx.globalAlpha = 1;
+    ctx.stroke();
 
     animRef.current = requestAnimationFrame(draw);
   }, [isPlaying]);
@@ -136,28 +196,16 @@ export default function AudioAnalyzer({ isPlaying }) {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      const ctx = canvas.getContext("2d");
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-
-    resize();
-    window.addEventListener("resize", resize);
     animRef.current = requestAnimationFrame(draw);
 
     return () => {
-      window.removeEventListener("resize", resize);
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
   }, [draw]);
 
   return (
     <div className="audio-analyzer">
-      <span className="audio-analyzer__label">Frequency Analysis</span>
+      <span className="audio-analyzer__label">Frequency</span>
       <canvas ref={canvasRef} />
     </div>
   );

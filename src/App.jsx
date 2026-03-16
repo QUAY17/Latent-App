@@ -104,6 +104,8 @@ export default function App() {
         track={activeTrack}
         isPlaying={isPlaying}
         activeIndex={activeIndex}
+        totalTracks={tracks.length}
+        mode={mode}
         onEnded={handleVideoEnded}
         onPlayStateChange={handlePlayStateChange}
       />
@@ -112,6 +114,7 @@ export default function App() {
         trackIndex={activeIndex}
         totalTracks={tracks.length}
         mode={mode}
+        isPlaying={isPlaying}
       />
       <Transport
         track={activeTrack}
