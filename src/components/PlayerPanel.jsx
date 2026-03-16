@@ -2,6 +2,7 @@ import FluidBackground from "./FluidBackground";
 import RippleRings from "./RippleRings";
 import HUDArcRing from "./HUDArcRing";
 import YouTubePlayer from "./YouTubePlayer";
+import AudioAnalyzer from "./AudioAnalyzer";
 
 export default function PlayerPanel({
   track,
@@ -21,27 +22,33 @@ export default function PlayerPanel({
 
       <div className="player-panel__content">
         {hasVideo ? (
-          <div className="player-panel__youtube">
-            <YouTubePlayer
-              videoId={track.ytId}
-              isPlaying={isPlaying}
-              onEnded={onEnded}
-              onPlayStateChange={onPlayStateChange}
-            />
-          </div>
+          <>
+            <div className="player-panel__youtube">
+              <YouTubePlayer
+                videoId={track.ytId}
+                isPlaying={isPlaying}
+                onEnded={onEnded}
+                onPlayStateChange={onPlayStateChange}
+              />
+            </div>
+            <AudioAnalyzer isPlaying={isPlaying} />
+          </>
         ) : hasTrack ? (
-          <div className="player-panel__empty">
-            <div className="player-panel__empty-artist">{track.artist}</div>
-            <div className="player-panel__empty-cut">{track.cut}</div>
-            <a
-              className="player-panel__search-link"
-              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(track.ytSearch)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Search on YouTube
-            </a>
-          </div>
+          <>
+            <div className="player-panel__empty">
+              <div className="player-panel__empty-artist">{track.artist}</div>
+              <div className="player-panel__empty-cut">{track.cut}</div>
+              <a
+                className="player-panel__search-link"
+                href={`https://www.youtube.com/results?search_query=${encodeURIComponent(track.ytSearch)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Search on YouTube
+              </a>
+            </div>
+            <AudioAnalyzer isPlaying={false} />
+          </>
         ) : (
           <div className="player-panel__idle">
             <div className="player-panel__idle-title">Latent</div>

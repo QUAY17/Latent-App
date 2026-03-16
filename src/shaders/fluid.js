@@ -1,9 +1,9 @@
 /**
- * Iridescent fluid shader — the visual centerpiece.
+ * Iridescent fluid shader — neon palette.
  *
- * A full-screen quad with organic, slow-moving color fields
- * that shift between iridescent blues, purples, and golds.
- * Reacts to track changes via a seed uniform.
+ * Full-screen quad with organic, slow-moving color fields
+ * shifting between deep blues, electric purples, cyan, and magenta.
+ * Dark and moody — the visuals behind the dashboard.
  */
 
 export const vertexShader = /* glsl */ `
@@ -23,7 +23,6 @@ export const fragmentShader = /* glsl */ `
 
   varying vec2 vUv;
 
-  // Simplex-style noise
   vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
   vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
@@ -90,37 +89,39 @@ export const fragmentShader = /* glsl */ `
     float aspect = uResolution.x / uResolution.y;
     uv.x *= aspect;
 
-    float t = uTime * 0.08;
+    float t = uTime * 0.06;
     float seed = uSeed * 0.7;
 
-    // Layered noise for organic movement
-    float n1 = snoise(vec3(uv * 1.2 + seed, t));
-    float n2 = snoise(vec3(uv * 2.4 - seed * 0.5, t * 1.3 + 10.0));
-    float n3 = snoise(vec3(uv * 0.6 + seed * 0.3, t * 0.7 + 20.0));
+    // Layered noise
+    float n1 = snoise(vec3(uv * 1.0 + seed, t));
+    float n2 = snoise(vec3(uv * 2.2 - seed * 0.5, t * 1.4 + 10.0));
+    float n3 = snoise(vec3(uv * 0.5 + seed * 0.3, t * 0.6 + 20.0));
+    float n4 = snoise(vec3(uv * 3.5 + seed * 0.1, t * 2.0 + 5.0));
 
-    float combined = n1 * 0.5 + n2 * 0.3 + n3 * 0.2;
+    float combined = n1 * 0.4 + n2 * 0.3 + n3 * 0.2 + n4 * 0.1;
 
-    // Iridescent color mapping — blues, purples, golds
-    vec3 deep_blue   = vec3(0.02, 0.05, 0.15);
-    vec3 cyan_blue   = vec3(0.0, 0.25, 0.45);
-    vec3 purple      = vec3(0.2, 0.05, 0.35);
-    vec3 gold        = vec3(0.45, 0.35, 0.15);
-    vec3 dark        = vec3(0.02, 0.02, 0.02);
+    // Neon color mapping — deep darks, electric accents
+    vec3 void_black  = vec3(0.01, 0.01, 0.03);
+    vec3 deep_blue   = vec3(0.02, 0.03, 0.12);
+    vec3 electric_blue = vec3(0.0, 0.15, 0.35);
+    vec3 cyan_pop    = vec3(0.0, 0.5, 0.7);
+    vec3 purple      = vec3(0.25, 0.05, 0.4);
+    vec3 magenta     = vec3(0.5, 0.0, 0.25);
 
-    // Map noise to color bands
     float shift = combined * 0.5 + 0.5;
-    vec3 color = mix(dark, deep_blue, smoothstep(0.0, 0.3, shift));
-    color = mix(color, cyan_blue, smoothstep(0.25, 0.5, shift));
-    color = mix(color, purple, smoothstep(0.45, 0.7, shift));
-    color = mix(color, gold, smoothstep(0.7, 0.95, shift));
+    vec3 color = mix(void_black, deep_blue, smoothstep(0.0, 0.25, shift));
+    color = mix(color, electric_blue, smoothstep(0.2, 0.4, shift));
+    color = mix(color, purple, smoothstep(0.35, 0.55, shift));
+    color = mix(color, cyan_pop, smoothstep(0.55, 0.75, shift) * 0.4);
+    color = mix(color, magenta, smoothstep(0.75, 0.95, shift) * 0.3);
 
-    // Vignette — darker at edges
+    // Vignette
     vec2 center = vUv - 0.5;
-    float vignette = 1.0 - dot(center, center) * 1.5;
+    float vignette = 1.0 - dot(center, center) * 1.8;
     color *= vignette;
 
-    // Overall brightness — keep it dark and moody
-    color *= 0.6;
+    // Keep it dark — this is behind dashboard panels
+    color *= 0.45;
 
     gl_FragColor = vec4(color, 1.0);
   }

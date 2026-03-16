@@ -4,6 +4,7 @@ import TRACKS from "./data/tracks";
 import Topbar from "./components/Topbar";
 import Setlist from "./components/Setlist";
 import PlayerPanel from "./components/PlayerPanel";
+import TrackDataPanel from "./components/TrackDataPanel";
 import Transport from "./components/Transport";
 
 const STORAGE_KEY = "latent-track-ids";
@@ -105,6 +106,12 @@ export default function App() {
         activeIndex={activeIndex}
         onEnded={handleVideoEnded}
         onPlayStateChange={handlePlayStateChange}
+      />
+      <TrackDataPanel
+        track={activeTrack}
+        trackIndex={activeIndex}
+        totalTracks={tracks.length}
+        mode={mode}
       />
       <Transport
         track={activeTrack}
