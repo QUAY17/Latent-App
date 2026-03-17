@@ -413,7 +413,7 @@ export default function HUDDashboard({ track, trackIndex, totalTracks, mode, isP
       ctx.font = `${Math.max(9, baseR * 0.038)}px 'DM Mono', monospace`;
       ctx.letterSpacing = "3px";
       ctx.fillStyle = rgba(WHITE, 0.25);
-      ctx.fillText("THE MUSIC BENEATH THE SURFACE", cx, cy + baseR * 0.08);
+      ctx.fillText("SAMPLE THE SPACE", cx, cy + baseR * 0.08);
       ctx.letterSpacing = "0px";
 
       // Mode label

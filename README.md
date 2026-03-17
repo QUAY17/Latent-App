@@ -1,6 +1,6 @@
 # Latent
 
-**The music beneath the surface.**
+**Sample the space.**
 
 A cinematic music dashboard designed to be displayed on a TV or large screen. Latent connects to YouTube and plays curated setlists of live recordings, deep cuts, and instrument-forward tracks — with visuals worth watching even when a track is playing.
 

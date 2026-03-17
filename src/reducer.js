@@ -56,6 +56,24 @@ export function reducer(state, action) {
       return { ...state, tracks };
     }
 
+    case "PLAY_GUEST": {
+      const guest = {
+        id: `guest-${Date.now()}`,
+        artist: action.title || "Guest Track",
+        cut: "",
+        ytId: action.ytId,
+        tags: ["GUEST"],
+        notes: "",
+      };
+      const tracks = [...state.tracks, guest];
+      return {
+        ...state,
+        tracks,
+        activeIndex: tracks.length - 1,
+        isPlaying: true,
+      };
+    }
+
     case "VIDEO_ENDED":
       if (state.mode === "playlist") {
         const next = state.activeIndex + 1;
