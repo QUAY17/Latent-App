@@ -36,7 +36,7 @@ export default function App() {
     const savedIds = loadSavedIds();
     const merged = TRACKS.map((t) => ({
       ...t,
-      ytId: savedIds[t.id] || t.ytId,
+      ytId: t.ytId || savedIds[t.id] || "",
     }));
     dispatch({ type: "INIT_TRACKS", tracks: merged });
   }, []);
@@ -79,11 +79,10 @@ export default function App() {
   }, []);
 
   const handleUpdateYtId = useCallback(
-    (ytId) => {
-      if (activeIndex < 0) return;
-      dispatch({ type: "UPDATE_YT_ID", index: activeIndex, ytId });
+    (ytId, title) => {
+      dispatch({ type: "PLAY_GUEST", ytId, title });
     },
-    [activeIndex]
+    []
   );
 
   return (
@@ -99,6 +98,7 @@ export default function App() {
         searchQuery={searchQuery}
         onSearch={handleSearch}
         onSelectTrack={handleSelectTrack}
+        onPlayGuest={handleUpdateYtId}
       />
       <PlayerPanel
         track={activeTrack}

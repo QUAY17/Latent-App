@@ -3,7 +3,7 @@ export default function Topbar({ mode, trackCount, onToggleMode }) {
     <header className="topbar">
       <div className="topbar__brand">
         <span className="topbar__logo">Latent</span>
-        <span className="topbar__tagline">the music beneath the surface</span>
+        <span className="topbar__tagline">sample the space</span>
       </div>
       <div className="topbar__controls">
         <span className="topbar__track-count">

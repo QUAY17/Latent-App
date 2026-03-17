@@ -1,4 +1,4 @@
-/* ── Latent — the music beneath the surface ── */
+/* ── Latent — sample the space ── */
 
 :root {
   /* Backgrounds — cool blacks, no warm undertone */
@@ -207,16 +207,100 @@ body,
 /* ── Setlist Panel ── */
 .setlist {
   grid-area: setlist;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: 1fr 28px;
+  grid-template-rows: 1fr;
   background: var(--bg-secondary);
   border-right: 1px solid var(--border);
   overflow: hidden;
   z-index: 2;
 }
 
+.setlist__tabs {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+}
+
+.setlist__tab {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(180deg);
+  flex: 1;
+  padding: 12px 4px;
+  background: none;
+  border: none;
+  border-left: 2px solid transparent;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.setlist__tab:hover {
+  color: var(--text-secondary);
+}
+
+.setlist__tab--active {
+  color: var(--accent-cyan);
+  border-left-color: var(--accent-cyan);
+}
+
+.setlist__content {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .setlist__search {
+  display: flex;
+  gap: 6px;
   padding: 10px 12px;
+}
+
+.setlist__search-btn {
+  padding: 7px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--accent-cyan);
+  border-radius: 2px;
+  color: var(--accent-cyan);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.setlist__search-btn:hover {
+  background: rgba(0, 212, 255, 0.1);
+}
+
+.setlist__status {
+  padding: 16px 12px;
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.setlist__status--error {
+  color: var(--accent-red, #ff3b5c);
+}
+
+.yt-result {
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.yt-result:hover {
+  background: rgba(0, 212, 255, 0.06);
 }
 
 .setlist__search-input {
